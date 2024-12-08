@@ -22,8 +22,8 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Execute pre-commit
-        run: uvx pre-commit run --all-files
+      - name: Ruff Check
+        run: uvx ruff check
 
   Publish:
     name: Publish
