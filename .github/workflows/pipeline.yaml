@@ -22,11 +22,8 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Sync UV Environment
-        run: uv sync
-
       - name: Ruff Check
-        run: uv run ruff check
+        run: uvx ruff check
 
   Publish:
     name: Publish
