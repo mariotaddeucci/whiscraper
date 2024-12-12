@@ -4,8 +4,8 @@ from functools import cached_property
 
 import nodriver
 
-from .scrapping_tools.captcha_solver import CaptchaSolver
-from .scrapping_tools.request_interceptor import RequestInterceptor
+from .tools.captcha_solver import CaptchaSolver
+from .tools.request_interceptor import RequestInterceptor
 
 
 class Page:

@@ -1,4 +1,3 @@
-readme_content = """
 # Whiscraper
 
 **Your Stealthy Scraping Python Framework**
