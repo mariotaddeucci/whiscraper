@@ -10,20 +10,14 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["httpx>=0.28", "nodriver>=0.38"]
 
-[project.optional-dependencies]
-cli = ["typer", "uv"]
-
-[project.scripts]
-gyjd = "gyjd.cli.__main__:app"
-
 [tool.hatch.build]
 exclude = ["/tests", "/docs", "/examples"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/gyjd"]
+packages = ["src/whiscraper"]
 
 [tool.hatch.envs.hatch-test]
-dependencies = ["pytest >=8.3.3,<9"]
+dependencies = ["pytest >=8.3.3,<9", "ruff >=0.1.0,<1"]
 extra-args = ["-vv"]
 
 [tool.hatch.envs.hatch-test.scripts]
