@@ -1,24 +1,38 @@
 import asyncio
+import fnmatch
+from contextlib import suppress
+from functools import cache
+from typing import TYPE_CHECKING
 
-import nodriver
+if TYPE_CHECKING:
+    from whiscraper.browser.page import Page
+
+PROVIVERS_URL_PATTERN = {
+    "*challenges.cloudflare.com*": "cloudflare",
+}
 
 
 class CaptchaSolver:
-    def __init__(self, tab: nodriver.Tab):
-        self._tab = tab
-        self._intercepted_responses = asyncio.Queue()
-        self._patterns: list[str] = []
+    def __init__(self, page: "Page"):
+        self._page = page
 
-    async def bypass_recaptcha(self):
-        await self._tab
-        iframe = await self._tab.select('iframe[title="reCAPTCHA"]')
-        checkbox = await iframe.query_selector("div.rc-inline-block")
-        if not isinstance(checkbox, nodriver.Element):
-            raise RuntimeError("Checkbox not found")
+    @staticmethod
+    @cache
+    def _get_providers(url: str) -> str | None:
+        for pattern, provider in PROVIVERS_URL_PATTERN.items():
+            if fnmatch.fnmatch(url, pattern):
+                return provider
+        return None
 
-        await checkbox.mouse_move()
-        await checkbox.mouse_click()
+    async def wait_solve(self, sleep: int = 5) -> None:
+        await asyncio.sleep(5)
+        await self._page.tab
+        while True:
+            await asyncio.sleep(1)
+            with suppress(Exception):
+                for script in await self._page.tab.find_all("script", timeout=3):
+                    if self._get_providers(script.attrs["src"]):
+                        continue
+            break
 
-    async def bypass_cloudflare(self):
-        await self._tab
-        await self._tab.verify_cf()
+        await self._page.tab

@@ -5,11 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "whiscraper"
 dynamic = ["version"]
-# version = "0.1.0"
 description = "Your Stealthy Scraping Python Framework"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["httpx>=0.28", "nodriver>=0.38"]
+dependencies = [
+    "nodriver>=0.38"
+]
 
 [tool.hatch.build]
 exclude = ["/tests", "/docs", "/examples"]

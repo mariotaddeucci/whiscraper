@@ -10,6 +10,7 @@ import nodriver
 @dataclass(frozen=True)
 class Response:
     request_id: str
+    url: str
     headers: dict[str, str]
     status_code: int
     body: str | None = None
@@ -58,6 +59,7 @@ class RequestInterceptor:
 
             resp_factory_fn = partial(
                 Response,
+                url=item.response.url,
                 request_id=str(item.request_id),
                 headers=dict(item.response.headers),
                 status_code=item.response.status,
@@ -88,3 +90,6 @@ class RequestInterceptor:
     def filter(self, fn: Callable[[nodriver.cdp.network.ResponseReceived], bool]):
         self._filters.append(fn)
         return self
+
+    def has_response(self):
+        return not self._intercepted_responses.empty()

@@ -1,36 +1,45 @@
 import asyncio
+from dataclasses import dataclass
+from pathlib import Path
 
 import nodriver
+from whiscraper.browser.page import Page
 
-from .page import Page
+
+@dataclass
+class BrowserManagerConfig:
+    headless: bool = False
+    block_images: bool = True
+    mute_audio: bool = True
+    max_opened_tabs: int = 1
+
+    def to_browser_config(self):
+        browser_config = nodriver.Config()
+        browser_config.headless = self.headless
+
+        browser_config.add_argument("--start-maximized")
+        browser_config.add_argument("--no-default-browser-check")
+        browser_config.add_argument("--no-first-run")
+
+        if self.mute_audio:
+            browser_config.add_argument("--mute-audio")
+
+        extensions_dir = Path(__file__).parent / "extensions"
+        browser_config.add_extension(str(extensions_dir / "cf-captcha-solver.crx"))
+        return browser_config
 
 
 class BrowserManager:
-    def __init__(
-        self,
-        browser_config: nodriver.Config | None = None,
-        headless: bool = False,
-        block_images: bool = True,
-        mute_audio: bool = True,
-        max_opened_tabs: int = 1,
-    ):
-        if browser_config is None:
-            browser_config = nodriver.Config()
+    def __init__(self, config: BrowserManagerConfig | None = None):
+        if config is None:
+            config = BrowserManagerConfig()
 
-        browser_config.headless = headless
-        browser_config.add_argument("--no-default-browser-check")
-        browser_config.add_argument("--no-first-run")
-        if mute_audio:
-            browser_config.add_argument("--mute-audio")
-        if block_images:
-            browser_config.add_argument("--blink-settings=imagesEnabled=false")
-
-        self._browser_config = browser_config
+        self._browser_config = config.to_browser_config()
         self._browser: nodriver.Browser | None = None
 
         self._lock = asyncio.Lock()
 
-        self._max_opened_tabs = max_opened_tabs
+        self._max_opened_tabs = config.max_opened_tabs
         self._max_opened_tabs_exceeded_event = asyncio.Event()
 
     @property
@@ -51,7 +60,6 @@ class BrowserManager:
             browser = await self.get_browser()
             tab = await browser.get(url=url, new_window=new_window)
 
-        await tab.maximize()
         return Page(tab)
 
     async def close(self):

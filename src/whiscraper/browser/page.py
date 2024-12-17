@@ -3,9 +3,8 @@ import random
 from functools import cached_property
 
 import nodriver
-
-from .tools.captcha_solver import CaptchaSolver
-from .tools.request_interceptor import RequestInterceptor
+from whiscraper.browser.tools.captcha_solver import CaptchaSolver
+from whiscraper.browser.tools.request_interceptor import RequestInterceptor
 
 
 class Page:
@@ -27,6 +26,7 @@ class Page:
         obj = await self.tab.wait_for(selector, timeout=timeout)
         await obj.mouse_move()
         await obj.mouse_click()
+        await self.tab
         return obj
 
     async def get(self, url: str, wait_page_load: bool = True):
@@ -41,4 +41,4 @@ class Page:
 
     @cached_property
     def captcha(self) -> CaptchaSolver:
-        return CaptchaSolver(self.tab)
+        return CaptchaSolver(self)
