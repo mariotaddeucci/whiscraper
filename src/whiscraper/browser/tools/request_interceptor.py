@@ -1,5 +1,6 @@
 import asyncio
 import fnmatch
+import math
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Tuple
@@ -51,7 +52,7 @@ class RequestInterceptor:
 
         await self._intercepted_responses.put(event)
 
-    async def take(self, total: int, include_body: bool = True, timeout: float = 10):
+    async def take(self, total: int, include_body: bool = True, timeout: float = 10, body_collect_timeout: int = 5):
         for _ in range(total):
             item: nodriver.cdp.network.ResponseReceived = await asyncio.wait_for(
                 self._intercepted_responses.get(), timeout
@@ -65,14 +66,19 @@ class RequestInterceptor:
                 status_code=item.response.status,
             )
 
-            if not include_body:
+            if not include_body or item.response.status == 204:
                 yield resp_factory_fn(body=None)
                 return
 
             cdp_command = nodriver.cdp.network.get_response_body(item.request_id)
-            response_body: Tuple[str, bool] | None = await self._tab.send(cdp_command)
 
-            if response_body is None:
+            for i in range(body_collect_timeout):
+                response_body: Tuple[str, bool] | None = await self._tab.send(cdp_command)
+                if response_body is not None:
+                    break
+                elif i < body_collect_timeout - 1:
+                    await asyncio.sleep(1)
+            else:
                 yield resp_factory_fn(body=None)
                 return
 
