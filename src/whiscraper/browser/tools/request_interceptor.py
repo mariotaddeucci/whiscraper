@@ -123,4 +123,4 @@ class RequestInterceptor:
 
     @property
     def empty(self) -> bool:
-        return len(self._intercepted_responses) > 0
+        return len(self._intercepted_responses) == 0
