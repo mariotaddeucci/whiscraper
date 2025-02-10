@@ -1,6 +1,5 @@
 import asyncio
 import fnmatch
-import math
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Tuple
