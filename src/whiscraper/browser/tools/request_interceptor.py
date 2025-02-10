@@ -89,8 +89,10 @@ class RequestInterceptor:
 
             yield resp_factory_fn(body=body_text)
 
-    async def get(self, include_body: bool = True, timeout: float = 10):
-        async for vl in self.take(1, include_body=include_body, timeout=timeout):
+    async def get(self, include_body: bool = True, timeout: float = 10, body_collect_timeout: int = 5):
+        async for vl in self.take(
+            1, include_body=include_body, timeout=timeout, body_collect_timeout=body_collect_timeout
+        ):
             return vl
 
     def filter(self, fn: Callable[[nodriver.cdp.network.ResponseReceived], bool]):
