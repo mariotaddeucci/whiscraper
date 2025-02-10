@@ -1,5 +1,6 @@
 import asyncio
 import fnmatch
+from collections import deque
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Tuple
@@ -19,9 +20,33 @@ class Response:
 class RequestInterceptor:
     def __init__(self, tab: nodriver.Tab):
         self._tab = tab
-        self._intercepted_responses = asyncio.Queue()
+        self._lock = asyncio.Lock()
+        self._debounce_task: asyncio.Task | None = None
+        self._debounce_event = asyncio.Event()
+        self._intercepted_responses: deque[nodriver.cdp.network.ResponseReceived] = deque()
         self._patterns: list[str] = []
         self._filters: list[Callable[[nodriver.cdp.network.ResponseReceived], bool]] = []
+
+    async def _debounce_event_trigger(self):
+        await asyncio.sleep(2)
+        async with self._lock:
+            self._debounce_event.set()
+
+    async def _add_intercepted_response(self, response: nodriver.cdp.network.ResponseReceived):
+        async with self._lock:
+            self._intercepted_responses.append(response)
+            if self._debounce_task:
+                self._debounce_task.cancel()
+            self._debounce_event.clear()
+            self.task = asyncio.create_task(self._debounce_event_trigger())
+
+    async def _pop_intercepted_response(self, timeout: float = 10) -> nodriver.cdp.network.ResponseReceived:
+        async with asyncio.timeout(timeout):
+            await self._debounce_event.wait()
+        event = self._intercepted_responses.popleft()
+        if self.empty:
+            self._debounce_event.clear()
+        return event
 
     def _match(self, url: str) -> bool:
         return any(fnmatch.fnmatch(url.lower(), pattern) for pattern in self._patterns)
@@ -49,13 +74,11 @@ class RequestInterceptor:
         if not all(fn(event) for fn in self._filters):
             return
 
-        await self._intercepted_responses.put(event)
+        await self._add_intercepted_response(event)
 
     async def take(self, total: int, include_body: bool = True, timeout: float = 10, body_collect_timeout: int = 5):
         for _ in range(total):
-            item: nodriver.cdp.network.ResponseReceived = await asyncio.wait_for(
-                self._intercepted_responses.get(), timeout
-            )
+            item = await self._pop_intercepted_response(timeout=timeout)
 
             resp_factory_fn = partial(
                 Response,
@@ -98,5 +121,6 @@ class RequestInterceptor:
         self._filters.append(fn)
         return self
 
-    def has_response(self):
-        return not self._intercepted_responses.empty()
+    @property
+    def empty(self) -> bool:
+        return len(self._intercepted_responses) > 0
