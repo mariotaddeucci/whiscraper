@@ -4,4 +4,4 @@ from .browser.context import browser, get_page
 
 __all__ = ["BrowserConfig", "browser", "get_page", "BrowserManager"]
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"

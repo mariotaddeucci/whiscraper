@@ -73,7 +73,7 @@ class RequestInterceptor:
 
             for i in range(body_collect_timeout):
                 response_body: Tuple[str, bool] | None = await self._tab.send(cdp_command)
-                if response_body is not None:
+                if response_body is not None and response_body[0].strip():
                     break
                 elif i < body_collect_timeout - 1:
                     await asyncio.sleep(1)
